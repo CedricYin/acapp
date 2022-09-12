@@ -32,3 +32,9 @@
     transform: scale(1.2);  /* 鼠标放上去之后变大 */
     transition: 100ms;  /* 渐变 */
 }
+
+.ac-game-playground {
+    width: 100%;
+    height: 100%;
+    user-select: none;
+}
