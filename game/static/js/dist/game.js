@@ -206,7 +206,7 @@ class Player extends AcGameObject {
     }
 
     start() {
-        if(this.is_me) {
+        if (this.is_me) {
             this.add_listening_events();  // 若是自己，则监听鼠标事件
         } else {
             let tx = Math.random() * this.playground.width;
@@ -219,23 +219,24 @@ class Player extends AcGameObject {
         let outer = this;
 
         // 关闭右键点击出菜单的效果
-        this.playground.game_map.$canvas.on("contextmenu", function() {
+        this.playground.game_map.$canvas.on("contextmenu", function () {
             return false;
         });
 
-        this.playground.game_map.$canvas.mousedown(function(e) {
-            if(e.which === 3) {  // 3：右击事件
-                outer.move_to(e.clientX, e.clientY);
-            } else if(e.which === 1) {  // 1：左击技能
-                if(outer.cur_skill === "fireball") {
-                    outer.shoot_fireball(e.clientX, e.clientY);
+        this.playground.game_map.$canvas.mousedown(function (e) {
+            const rect = outer.ctx.canvas.getBoundingClientRect();  // 为了能适应acapp的小窗口，必须减掉相对位置
+            if (e.which === 3) {  // 3：右击事件
+                outer.move_to(e.clientX - rect.left, e.clientY - rect.top);
+            } else if (e.which === 1) {  // 1：左击技能
+                if (outer.cur_skill === "fireball") {
+                    outer.shoot_fireball(e.clientX - rect.left, e.clientY - rect.top);
                 }
                 outer.cur_skill = null;
             }
         });
 
-        $(window).keydown(function(e) {
-            if(e.which === 81) {  // Q：火球
+        $(window).keydown(function (e) {
+            if (e.which === 81) {  // Q：火球
                 outer.cur_skill = "fireball";
                 return false;
             }
@@ -268,11 +269,11 @@ class Player extends AcGameObject {
 
     // 被攻击后会后退，并且产生粒子效果
     is_attacked(angle, damage) {
-        for(let i = 0; i < 20 + Math.random() * 10; i ++) {
+        for (let i = 0; i < 20 + Math.random() * 10; i++) {
 
         }
         this.radius -= damage;  // 被攻击后半径变小
-        if(this.radius < 10) {  // 小于10px就消失
+        if (this.radius < 10) {  // 小于10px就消失
             this.destory();
             return false;
         }
@@ -284,9 +285,9 @@ class Player extends AcGameObject {
 
     update() {
         this.spent_time += this.timedelta / 1000;
-        if(!this.is_me && this.spent_time > 4 && Math.random() < 1 / 300.0) {  // 游戏开始4s后，人机5s内随机攻击一次
+        if (!this.is_me && this.spent_time > 4 && Math.random() < 1 / 300.0) {  // 游戏开始4s后，人机5s内随机攻击一次
             let player = this.playground.players[Math.floor(Math.random() * this.playground.players.length)];
-            if(player !== this) {
+            if (player !== this) {
                 // ???
                 let tx = player.x + player.speed * player.vx * this.timedelta / 1000 * 0.3;
                 let ty = player.y + player.speed * player.vy * this.timedelta / 1000 * 0.3;
@@ -294,20 +295,20 @@ class Player extends AcGameObject {
             }
         }
 
-        if(this.damage_speed > 10) {
+        if (this.damage_speed > 10) {
             this.vx = this.vy = 0;
             this.move_length = 0;
             this.x += this.damage_x * this.damage_speed * this.timedelta / 1000;
             this.y += this.damage_y * this.damage_speed * this.timedelta / 1000;
             this.damage_speed *= this.friction;
         } else {
-            if(this.move_length < this.eps) {
+            if (this.move_length < this.eps) {
                 this.move_length = 0;
                 this.vx = this.vy = 0;
-                if(!this.is_me) {  // 如果是人机，则继续随机移动
+                if (!this.is_me) {  // 如果是人机，则继续随机移动
                     let tx = Math.random() * this.playground.width;
                     let ty = Math.random() * this.playground.height;
-                    this.move_to(tx, ty);                   
+                    this.move_to(tx, ty);
                 }
             } else {
                 let moved = Math.min(this.speed * this.timedelta / 1000, this.move_length);  // 真实移动距离
@@ -329,7 +330,7 @@ class Player extends AcGameObject {
     }
 
     on_destory() {
-        for (let i = 0; i < this.playground.players.length; i ++ ) {
+        for (let i = 0; i < this.playground.players.length; i++) {
             if (this.playground.players[i] === this) {
                 this.playground.players.splice(i, 1);
             }
@@ -412,21 +413,8 @@ class FireBall extends AcGameObject {
         this.root = root;
         this.$playground = $(`<div class="ac-game-playground"></div>`);
 
-        // this.hide();  // 由于一开始肯定不是游戏界面，所以先hide
-        this.root.$ac_game.append(this.$playground);
+        this.hide();  // 由于一开始肯定不是游戏界面，所以先hide
 
-        // 记录游戏界面的宽和高
-        this.width = this.$playground.width();
-        this.height = this.$playground.height();
-
-        this.game_map = new GameMap(this);  // 生成地图
-        
-        // 生成自己和人机
-        this.players = [];
-        this.players.push(new Player(this, this.width / 2, this.height / 2, this.height * 0.05, "white", this.height * 0.15, true));
-        for(let i = 0; i < 5; i ++) {
-            this.players.push(new Player(this, this.width / 2, this.height / 2, this.height * 0.05, this.get_random_color(), this.height * 0.15, false));
-        }
         this.start();
     }
 
@@ -440,6 +428,22 @@ class FireBall extends AcGameObject {
 
     show() {  // 打开playground界面
         this.$playground.show();
+
+        // show出来之后再初始化（适应切换界面前的窗口大小）
+        this.root.$ac_game.append(this.$playground);
+
+        // 记录游戏界面的宽和高
+        this.width = this.$playground.width();
+        this.height = this.$playground.height();
+
+        this.game_map = new GameMap(this);  // 生成地图
+
+        // 生成自己和人机
+        this.players = [];
+        this.players.push(new Player(this, this.width / 2, this.height / 2, this.height * 0.05, "white", this.height * 0.15, true));
+        for (let i = 0; i < 5; i++) {
+            this.players.push(new Player(this, this.width / 2, this.height / 2, this.height * 0.05, this.get_random_color(), this.height * 0.15, false));
+        }
     }
 
     hide() {  // 关闭playground界面
@@ -451,7 +455,7 @@ export class AcGame {
     constructor(id) {
         this.id = id;
         this.$ac_game = $('#' + id);  // jQuery找html对象直接用 # + id
-        // this.menu = new AcGameMenu(this);
+        this.menu = new AcGameMenu(this);
         this.playground = new AcGamePlayground(this);
 
         this.start();
